@@ -1,270 +1,252 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>チャンピオン登録</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      background: #0f172a;
-      color: #e5e7eb;
-      font-family: sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-    h1, h2 { margin: 0; }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-    .nav {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .nav a, .nav .nav-btn {
-      background: #1e293b;
-      color: #e5e7eb;
-      text-decoration: none;
-      padding: 10px 14px;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      width: auto;
-      font: inherit;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .nav a:hover, .nav .nav-btn:hover { background: #334155; }
-    .container {
-      display: flex;
-      gap: 30px;
-      align-items: flex-start;
-    }
-    .form-area {
-      width: 320px;
-      background: #111827;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 16px;
-      position: sticky;
-      top: 20px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: white;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #d4af37;
-      border: none;
-      cursor: pointer;
-      font-weight: bold;
-      border-radius: 8px;
-    }
-    button:hover { opacity: 0.85; }
-    #paste-area {
-      border: 2px dashed #64748b;
-      padding: 20px;
-      text-align: center;
-      margin-bottom: 15px;
-      background: #1e293b;
-      border-radius: 10px;
-      min-height: 180px;
-    }
-    #preview {
-      max-width: 100%;
-      max-height: 220px;
-      margin-top: 10px;
-      border-radius: 8px;
-    }
-    .info-box {
-      margin-top: 12px;
-      padding: 10px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: #cbd5e1;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 10px;
-    }
-    .list-area { flex: 1; min-width: 0; }
-    .toolbar {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .search-row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .search-row input {
-      margin: 0;
-      max-width: 320px;
-    }
-    .tag-filters {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .tag-filter {
-      width: auto;
-      padding: 8px 12px;
-      background: #1e293b;
-      color: #e5e7eb;
-      border: 1px solid #334155;
-    }
-    .tag-filter.active {
-      background: #d4af37;
-      color: #111827;
-      border-color: #d4af37;
-    }
-    .champion-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, 140px);
-      gap: 15px;
-    }
-    .champion-card {
-      background: #1e293b;
-      padding: 10px;
-      text-align: center;
-      border: 1px solid #334155;
-      border-radius: 10px;
-    }
-    .champion-card img {
-      width: 110px;
-      height: 110px;
-      object-fit: cover;
-      border-radius: 8px;
-    }
-    .champion-card .name {
-      margin-top: 8px;
-      word-break: break-word;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .card-actions button {
-      padding: 6px;
-      font-size: 12px;
-    }
-    .edit-btn {
-      background: #3b82f6;
-      color: white;
-    }
-    .delete-btn {
-      background: #ef4444;
-      color: white;
-    }
-    .empty {
-      color: #94a3b8;
-      padding: 20px 0;
-    }
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(2, 6, 23, 0.72);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 1000;
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal {
-      width: min(560px, 100%);
-      background: #111827;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-    }
-    .modal h3 {
-      margin-top: 0;
-      margin-bottom: 14px;
-    }
-    .preview-box {
-      margin-bottom: 14px;
-      text-align: center;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 12px;
-    }
-    .preview-box img {
-      width: 160px;
-      height: 160px;
-      object-fit: cover;
-      border-radius: 10px;
-    }
-    .tag-section {
-      margin-bottom: 14px;
-    }
-    .tag-section-title {
-      margin-bottom: 8px;
-      color: #d4af37;
-      font-weight: bold;
-    }
-    .tag-options {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .tag-option {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 999px;
-      padding: 8px 12px;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .modal-actions button {
-      width: auto;
-      padding: 10px 14px;
-    }
-    .secondary-btn {
-      background: #1e293b;
-      color: #e5e7eb;
-      border: 1px solid #334155;
-    }
+<title>チャンピオン登録</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  background: #0f172a;
+  color: #e5e7eb;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+h1, h2 { margin: 0; }
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.nav a, .nav .nav-btn {
+  background: #1e293b;
+  color: #e5e7eb;
+  text-decoration: none;
+  padding: 10px 14px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  width: auto;
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nav a:hover, .nav .nav-btn:hover { background: #334155; }
+.container {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+}
+.form-area {
+  width: 320px;
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 16px;
+  position: sticky;
+  top: 20px;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: white;
+  border-radius: 8px;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  background: #d4af37;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 8px;
+}
+button:hover { opacity: 0.85; }
+#paste-area {
+  border: 2px dashed #64748b;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 15px;
+  background: #1e293b;
+  border-radius: 10px;
+  min-height: 180px;
+}
+#preview {
+  max-width: 100%;
+  max-height: 220px;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+.info-box {
+  margin-top: 12px;
+  padding: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+.list-area { flex: 1; min-width: 0; }
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.search-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search-row input {
+  margin: 0;
+  max-width: 320px;
+}
+.tag-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tag-filter {
+  width: auto;
+  padding: 8px 12px;
+  background: #1e293b;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+}
+.tag-filter.active {
+  background: #d4af37;
+  color: #111827;
+  border-color: #d4af37;
+}
+.champion-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 140px);
+  gap: 15px;
+}
+.champion-card {
+  background: #1e293b;
+  padding: 10px;
+  text-align: center;
+  border: 1px solid #334155;
+  border-radius: 10px;
+}
+.champion-card img {
+  width: 110px;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.champion-card .name {
+  margin-top: 8px;
+  word-break: break-word;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.card-actions button {
+  padding: 6px;
+  font-size: 12px;
+}
+.edit-btn { background: #3b82f6; color: white; }
+.delete-btn { background: #ef4444; color: white; }
+.empty { color: #94a3b8; padding: 20px 0; }
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  width: min(560px, 100%);
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+.modal h3 { margin-top: 0; margin-bottom: 14px; }
+.preview-box {
+  margin-bottom: 14px;
+  text-align: center;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px;
+}
+.preview-box img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.tag-section { margin-bottom: 14px; }
+.tag-section-title {
+  margin-bottom: 8px;
+  color: #d4af37;
+  font-weight: bold;
+}
+.tag-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tag-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.modal-actions button {
+  width: auto;
+  padding: 10px 14px;
+}
+.secondary-btn {
+  background: #1e293b;
+  color: #e5e7eb;
+  border: 1px solid #334155;
+}
 
 @media (max-width: 900px) {
-  body {
-    padding: 14px;
-  }
-  .header {
-    align-items: flex-start;
-  }
+  body { padding: 14px; }
+  .header { align-items: flex-start; }
   .nav {
     width: 100%;
     gap: 8px;
@@ -283,12 +265,8 @@
     width: 100%;
     position: static;
   }
-  .list-area {
-    width: 100%;
-  }
-  .toolbar {
-    gap: 10px;
-  }
+  .list-area { width: 100%; }
+  .toolbar { gap: 10px; }
   .search-row {
     flex-direction: column;
     align-items: stretch;
@@ -297,9 +275,7 @@
     max-width: none;
     width: 100%;
   }
-  .tag-filters {
-    gap: 6px;
-  }
+  .tag-filters { gap: 6px; }
   .tag-filter {
     padding: 8px 10px;
     font-size: 13px;
@@ -319,8 +295,7 @@
     overflow-y: auto;
   }
 }
-
-  </style>
+</style>
 </head>
 <body>
 <div class="header">
@@ -366,7 +341,7 @@
       </div>
     </div>
     <input id="championImportInput" type="file" accept=".json,application/json" style="display:none" onchange="handleChampionImport(event)">
-<div id="championList" class="champion-list"></div>
+    <div id="championList" class="champion-list"></div>
   </div>
 </div>
 
@@ -395,61 +370,13 @@
   </div>
 </div>
 
-<script src="db.js">
-function exportChampions() {
-  getChampionList().then(list => {
-    const payload = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      champions: list
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.download = "champions.json";
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  });
-}
-
-function triggerChampionImport(){
-  const input = document.getElementById("championImportInput");
-  input.value="";
-  input.click();
-}
-
-async function handleChampionImport(e){
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
-
-  try{
-    const text = await file.text();
-    const data = JSON.parse(text);
-
-    if(!data || !Array.isArray(data.champions)){
-      alert("不正なファイルです");
-      return;
-    }
-
-    const existing = await getChampionList();
-
-    const toAdd = data.champions.filter(ch => {
-      return !existing.some(e => e.name === ch.name && e.image === ch.image);
-    });
-
-    await saveManyChampions(toAdd);
-
-    alert(toAdd.length + "件のチャンピオンを追加しました");
-    initChampionPage();
-  }catch(err){
-    console.error(err);
-    alert("インポート失敗");
-  }
-}
-
-</script>
+<script src="db.js"></script>
 <script>
 let pastedImage = null;
+let allChampions = [];
+let activeTagFilter = "";
+let editingChampionId = null;
+let editImage = null;
 
 async function ensureInitialChampionSeed() {
   const status = document.getElementById("seedStatus");
@@ -503,31 +430,23 @@ async function initChampionPage() {
   await loadChampions();
 }
 
-let allChampions = [];
-let activeTagFilter = "";
-let editingChampionId = null;
-let editImage = null;
+document.addEventListener("paste", function (event) {
+  for (const item of event.clipboardData.items) {
+    if (!item.type.startsWith("image")) continue;
 
-document.addEventListener("paste", function (e) {
-  const items = e.clipboardData.items;
-  for (const item of items) {
-    if (item.type.indexOf("image") !== -1) {
-      const file = item.getAsFile();
-
-      if (document.getElementById("editModal").classList.contains("open")) {
-        handleImageFile(file, true);
-      } else {
-        handleImageFile(file, false);
-      }
-      return;
-    }
+    const file = item.getAsFile();
+    const isEdit = document.getElementById("editModal").classList.contains("open");
+    handleImageFile(file, isEdit);
+    return;
   }
 });
 
 function handleImageFile(file, isEdit) {
+  if (!file) return;
+
   const reader = new FileReader();
   reader.onload = function (event) {
-    compressImage(event.target.result, 220, 0.72).then((compressed) => {
+    compressImage(event.target.result, 220, 0.72).then(compressed => {
       if (isEdit) {
         editImage = compressed;
         document.getElementById("editPreview").src = compressed;
@@ -541,22 +460,18 @@ function handleImageFile(file, isEdit) {
 }
 
 function compressImage(src, maxSize, quality) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const img = new Image();
     img.onload = function () {
       let width = img.width;
       let height = img.height;
 
-      if (width > height) {
-        if (width > maxSize) {
-          height = Math.round(height * (maxSize / width));
-          width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
-          width = Math.round(width * (maxSize / height));
-          height = maxSize;
-        }
+      if (width > height && width > maxSize) {
+        height = Math.round(height * (maxSize / width));
+        width = maxSize;
+      } else if (height >= width && height > maxSize) {
+        width = Math.round(width * (maxSize / height));
+        height = maxSize;
       }
 
       const canvas = document.createElement("canvas");
@@ -564,7 +479,6 @@ function compressImage(src, maxSize, quality) {
       canvas.width = width;
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
-
       resolve(canvas.toDataURL("image/jpeg", quality));
     };
     img.src = src;
@@ -582,7 +496,7 @@ async function saveChampion() {
   try {
     await saveChampionData({
       id: crypto.randomUUID(),
-      name: name,
+      name,
       image: pastedImage,
       tags: []
     });
@@ -590,7 +504,6 @@ async function saveChampion() {
     document.getElementById("name").value = "";
     document.getElementById("preview").src = "";
     pastedImage = null;
-
     await initChampionPage();
   } catch (error) {
     console.error(error);
@@ -600,32 +513,6 @@ async function saveChampion() {
 
 async function loadChampions() {
   allChampions = await getChampionList();
-
-  if (allChampions.length === 0) {
-    try {
-      const response = await fetch("champions.json", { cache: "no-store" });
-      if (response.ok) {
-        const payload = await response.json();
-        if (payload && Array.isArray(payload.champions)) {
-          allChampions = payload.champions.map(ch => ({
-            ...ch,
-            tags: Array.isArray(ch.tags) ? ch.tags : []
-          }));
-
-          if (allChampions.length > 0) {
-            try {
-              await saveManyChampions(allChampions);
-            } catch (e) {
-              console.error(e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
   renderList();
 }
 
@@ -644,10 +531,7 @@ function renderList() {
 
   const filtered = allChampions
     .filter(c => c.name.toLowerCase().includes(keyword))
-    .filter(c => {
-      if (!activeTagFilter) return true;
-      return Array.isArray(c.tags) && c.tags.includes(activeTagFilter);
-    })
+    .filter(c => !activeTagFilter || (Array.isArray(c.tags) && c.tags.includes(activeTagFilter)))
     .sort((a, b) => a.name.localeCompare(b.name, "ja"));
 
   if (filtered.length === 0) {
@@ -655,15 +539,15 @@ function renderList() {
     return;
   }
 
-  filtered.forEach(c => {
+  filtered.forEach(champion => {
     const div = document.createElement("div");
     div.className = "champion-card";
     div.innerHTML = `
-      <img src="${c.image}" alt="">
-      <div class="name">${c.name}</div>
+      <img src="${champion.image}" alt="">
+      <div class="name">${champion.name}</div>
       <div class="card-actions">
-        <button class="edit-btn" onclick="openEditModal('${c.id}')">編集</button>
-        <button class="delete-btn" onclick="deleteChampion('${c.id}')">削除</button>
+        <button class="edit-btn" onclick="openEditModal('${champion.id}')">編集</button>
+        <button class="delete-btn" onclick="deleteChampion('${champion.id}')">削除</button>
       </div>
     `;
     list.appendChild(div);
@@ -706,79 +590,76 @@ async function saveEditChampion() {
   const current = await getChampionById(editingChampionId);
   if (!current) return;
 
-  const tags = Array.from(document.querySelectorAll(".tag-checkbox:checked")).map(el => el.value);
-
-  const updated = {
-    ...current,
-    name: document.getElementById("editName").value.trim(),
-    image: editImage || current.image,
-    tags: tags
-  };
-
-  if (!updated.name) {
+  const name = document.getElementById("editName").value.trim();
+  if (!name) {
     alert("チャンピオン名を入力してください");
     return;
   }
 
-  await saveChampionData(updated);
+  const tags = Array.from(document.querySelectorAll(".tag-checkbox:checked"))
+    .map(el => el.value);
+
+  await saveChampionData({
+    ...current,
+    name,
+    image: editImage || current.image,
+    tags
+  });
+
   closeEditModal();
   await initChampionPage();
 }
 
-initChampionPage();
+async function exportChampions() {
+  const list = await getChampionList();
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    champions: list
+  };
 
-function exportChampions() {
-  getChampionList().then(list => {
-    const payload = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      champions: list
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.download = "champions.json";
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.download = "champions.json";
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-function triggerChampionImport(){
+function triggerChampionImport() {
   const input = document.getElementById("championImportInput");
-  input.value="";
+  input.value = "";
   input.click();
 }
 
-async function handleChampionImport(e){
-  const file = e.target.files && e.target.files[0];
-  if(!file) return;
+async function handleChampionImport(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
 
-  try{
+  try {
     const text = await file.text();
     const data = JSON.parse(text);
 
-    if(!data || !Array.isArray(data.champions)){
+    if (!data || !Array.isArray(data.champions)) {
       alert("不正なファイルです");
       return;
     }
 
     const existing = await getChampionList();
-
-    const toAdd = data.champions.filter(ch => {
-      return !existing.some(e => e.name === ch.name && e.image === ch.image);
-    });
+    const toAdd = data.champions.filter(ch =>
+      !existing.some(e => e.name === ch.name && e.image === ch.image)
+    );
 
     await saveManyChampions(toAdd);
-
-    alert(toAdd.length + "件のチャンピオンを追加しました");
-    initChampionPage();
-  }catch(err){
-    console.error(err);
+    alert(`${toAdd.length}件のチャンピオンを追加しました`);
+    await initChampionPage();
+  } catch (error) {
+    console.error(error);
     alert("インポート失敗");
   }
 }
 
+initChampionPage();
 </script>
-
 </body>
 </html>
