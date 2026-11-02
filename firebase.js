@@ -8,6 +8,14 @@ const firebaseConfig = {
   measurementId: "G-F1H8P2RXMS"
 };
 
+const localTeamApi = {
+  getTeamList: typeof getTeamList === "function" ? getTeamList : null,
+  getTeamById: typeof getTeamById === "function" ? getTeamById : null,
+  saveTeamData: typeof saveTeamData === "function" ? saveTeamData : null,
+  deleteTeamData: typeof deleteTeamData === "function" ? deleteTeamData : null,
+  saveManyTeams: typeof saveManyTeams === "function" ? saveManyTeams : null
+};
+
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
@@ -29,6 +37,7 @@ lolnextAuth.onAuthStateChanged(user => {
     authReadyResolve(user);
   }
   updateAuthUI(user);
+  guardNonIndexPage(user);
   window.dispatchEvent(new CustomEvent("lolnext-auth-change", { detail: { user } }));
 });
 
@@ -136,11 +145,21 @@ function updateAuthUI(user) {
   if (logoutButton) logoutButton.style.display = user ? "inline-block" : "none";
 }
 
+function isIndexPage() {
+  const file = location.pathname.split("/").pop();
+  return !file || file === "index.html";
+}
+
+function guardNonIndexPage(user) {
+  if (user || isIndexPage()) return;
+  const current = location.pathname.split("/").pop() + location.search;
+  location.href = `index.html?v=56&next=${encodeURIComponent(current)}`;
+}
+
 async function requireLogin() {
   const user = await waitForAuthReady();
   if (user) return user;
-  const target = encodeURIComponent(location.pathname.split("/").pop() + location.search);
-  location.href = `index.html?v=56&next=${target}`;
+  guardNonIndexPage(null);
   return null;
 }
 
@@ -164,15 +183,14 @@ async function getCloudTeamById(id) {
 
 async function saveCloudTeam(team) {
   if (!team?.id) throw new Error("構成IDがありません");
-  const data = {
+  await teamCollection().doc(team.id).set({
     name: team.name || "",
     memo: team.memo || "",
     lanes: team.lanes || {},
     bans: Array.isArray(team.bans) ? team.bans : [],
     altPicks: team.altPicks || {},
     updatedAt: Date.now()
-  };
-  await teamCollection().doc(team.id).set(data);
+  });
 }
 
 async function deleteCloudTeam(id) {
@@ -185,8 +203,7 @@ async function saveManyCloudTeams(teams) {
   const collection = teamCollection();
   const now = Date.now();
   teams.forEach((team, index) => {
-    const ref = collection.doc(team.id);
-    batch.set(ref, {
+    batch.set(collection.doc(team.id), {
       name: team.name || "",
       memo: team.memo || "",
       lanes: team.lanes || {},
@@ -200,12 +217,12 @@ async function saveManyCloudTeams(teams) {
 
 async function migrateLocalTeamsIfCloudEmpty() {
   const user = getCurrentUser();
-  if (!user || typeof getTeamList !== "function") return 0;
+  if (!user || !localTeamApi.getTeamList) return 0;
 
   const cloudTeams = await getCloudTeamList();
   if (cloudTeams.length > 0) return 0;
 
-  const localTeams = await getTeamList();
+  const localTeams = await localTeamApi.getTeamList();
   if (!localTeams.length) return 0;
 
   await saveManyCloudTeams(localTeams);
@@ -215,11 +232,15 @@ async function migrateLocalTeamsIfCloudEmpty() {
 async function continueAfterLogin() {
   const params = new URLSearchParams(location.search);
   const next = params.get("next");
-  if (next && getCurrentUser()) {
-    location.href = next;
-  }
+  if (next && getCurrentUser()) location.href = next;
 }
 
 window.addEventListener("lolnext-auth-change", event => {
   if (event.detail.user) continueAfterLogin();
 });
+
+window.getTeamList = getCloudTeamList;
+window.getTeamById = getCloudTeamById;
+window.saveTeamData = saveCloudTeam;
+window.deleteTeamData = deleteCloudTeam;
+window.saveManyTeams = saveManyCloudTeams;
