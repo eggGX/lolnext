@@ -7,55 +7,30 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>構成新規作成</title>
-  <link rel="stylesheet" href="team-common.css?v=58">
+  <link rel="stylesheet" href="team-common.css?v=57">
 </head>
 <body data-mode="create">
 <div class="page">
   <div class="header">
     <h1>構成新規作成</h1>
     <div class="nav">
-      <a href="champion.html?v=58">チャンピオン登録</a>
-      <a href="team-builder.html?v=58">構成新規作成</a>
-      <a href="index.html?v=58">構成一覧</a>
+      <a href="champion.html?v=57">チャンピオン登録</a>
+      <a href="team-builder.html?v=57">構成新規作成</a>
+      <a href="index.html?v=57">構成一覧</a>
     </div>
   </div>
 
   <div class="main">
     <div class="left">
       <div id="capture" class="panel-view">
-        <div class="lane" data-lane="top">
-          <div class="lane-main"></div>
-          <div class="alt-area" data-alt="top"></div>
-          <button type="button" class="alt-btn" data-lane="top" onclick="handleAltButtonClick(event, 'top')">＋</button>
-        </div>
-        <div class="lane" data-lane="jg">
-          <div class="lane-main"></div>
-          <div class="alt-area" data-alt="jg"></div>
-          <button type="button" class="alt-btn" data-lane="jg" onclick="handleAltButtonClick(event, 'jg')">＋</button>
-        </div>
-        <div class="lane" data-lane="mid">
-          <div class="lane-main"></div>
-          <div class="alt-area" data-alt="mid"></div>
-          <button type="button" class="alt-btn" data-lane="mid" onclick="handleAltButtonClick(event, 'mid')">＋</button>
-        </div>
-        <div class="lane" data-lane="adc">
-          <div class="lane-main"></div>
-          <div class="alt-area" data-alt="adc"></div>
-          <button type="button" class="alt-btn" data-lane="adc" onclick="handleAltButtonClick(event, 'adc')">＋</button>
-        </div>
-        <div class="lane" data-lane="sup">
-          <div class="lane-main"></div>
-          <div class="alt-area" data-alt="sup"></div>
-          <button type="button" class="alt-btn" data-lane="sup" onclick="handleAltButtonClick(event, 'sup')">＋</button>
-        </div>
+        <div class="lane" data-lane="top"><div class="lane-main"></div><div class="alt-area" data-alt="top"></div><button type="button" class="alt-btn" data-lane="top" onclick="handleAltButtonClick(event, 'top')">＋</button></div>
+        <div class="lane" data-lane="jg"><div class="lane-main"></div><div class="alt-area" data-alt="jg"></div><button type="button" class="alt-btn" data-lane="jg" onclick="handleAltButtonClick(event, 'jg')">＋</button></div>
+        <div class="lane" data-lane="mid"><div class="lane-main"></div><div class="alt-area" data-alt="mid"></div><button type="button" class="alt-btn" data-lane="mid" onclick="handleAltButtonClick(event, 'mid')">＋</button></div>
+        <div class="lane" data-lane="adc"><div class="lane-main"></div><div class="alt-area" data-alt="adc"></div><button type="button" class="alt-btn" data-lane="adc" onclick="handleAltButtonClick(event, 'adc')">＋</button></div>
+        <div class="lane" data-lane="sup"><div class="lane-main"></div><div class="alt-area" data-alt="sup"></div><button type="button" class="alt-btn" data-lane="sup" onclick="handleAltButtonClick(event, 'sup')">＋</button></div>
       </div>
-
-      <div id="banPanel" class="panel-view hidden">
-        <div class="ban-header">BAN想定チャンピオン</div>
-        <div class="ban-grid" id="banSlotList"></div>
-      </div>
+      <div id="banPanel" class="panel-view hidden"><div class="ban-header">BAN想定チャンピオン</div><div class="ban-grid" id="banSlotList"></div></div>
     </div>
-
     <div class="right">
       <div class="top-actions">
         <button class="action-button secondary" onclick="openMetaModal()">構成名・メモ入力</button>
@@ -63,13 +38,11 @@
         <button class="action-button secondary" onclick="generateExportImage()">画像出力</button>
         <button class="action-button secondary" onclick="toggleBanMode()">BAN設定</button>
       </div>
-
       <div class="meta-summary">
         <div><strong>構成名:</strong> <span id="teamNamePreview">未設定</span></div>
         <div style="margin-top:8px;"><strong>メモ:</strong> <span id="memoPreview">未設定</span></div>
         <div id="shareNotice" style="display:none; margin-top:10px; color:#cbd5e1;">共有URLから読み込んだ構成です。保存すると通常の構成として登録されます。</div>
       </div>
-
       <h2 style="flex-shrink:0;">チャンピオン一覧</h2>
       <input id="searchInput" class="search-box" placeholder="チャンピオン名で検索" oninput="renderChampionList()">
       <div class="tag-filters">
@@ -80,59 +53,22 @@
         <button class="tag-filter" data-tag="ADC" onclick="setTagFilter('ADC')">ADC</button>
         <button class="tag-filter" data-tag="SUP" onclick="setTagFilter('SUP')">SUP</button>
       </div>
-      <div class="champion-list-scroll">
-        <div class="champion-list" id="championList"></div>
-      </div>
+      <div class="champion-list-scroll"><div class="champion-list" id="championList"></div></div>
     </div>
   </div>
 </div>
-
-<div class="modal-backdrop" id="metaModal">
-  <div class="modal">
-    <h2>構成情報入力</h2>
-    <input id="teamName" placeholder="構成名">
-    <textarea id="memo" placeholder="メモ"></textarea>
-    <div class="modal-actions">
-      <button class="cancel-btn" onclick="closeMetaModal()">閉じる</button>
-      <button class="save-btn" onclick="applyMeta()">反映</button>
-    </div>
-  </div>
-</div>
-
+<div class="modal-backdrop" id="metaModal"><div class="modal"><h2>構成情報入力</h2><input id="teamName" placeholder="構成名"><textarea id="memo" placeholder="メモ"></textarea><div class="modal-actions"><button class="cancel-btn" onclick="closeMetaModal()">閉じる</button><button class="save-btn" onclick="applyMeta()">反映</button></div></div></div>
 <div id="exportArea" style="position:fixed;left:-10000px;top:0;width:1380px;background:radial-gradient(circle at top,#1e293b 0%,#0f172a 70%);color:#fff;padding:36px;box-sizing:border-box;font-family:'Segoe UI',sans-serif;">
   <div id="exportNameBar" style="text-align:center;font-size:36px;font-weight:700;letter-spacing:2px;margin-bottom:28px;color:#f8fafc;text-shadow:0 4px 16px rgba(0,0,0,.35);">構成</div>
-  <div style="display:flex;align-items:flex-start;gap:28px;">
-    <div style="flex:1;min-width:0;">
-      <div style="text-align:center;font-size:24px;margin-bottom:14px;color:#facc15;font-weight:700;">構成</div>
-      <div id="exportMain" style="display:flex;gap:16px;justify-content:center;"></div>
-      <div id="exportSub" style="display:flex;gap:16px;justify-content:center;margin-top:14px;"></div>
-    </div>
-    <div style="width:170px;flex-shrink:0;">
-      <div style="text-align:center;font-size:24px;margin-bottom:14px;color:#facc15;font-weight:700;">BAN</div>
-      <div id="exportBan" style="display:grid;grid-template-columns:repeat(2,76px);gap:10px;justify-content:center;"></div>
-    </div>
-  </div>
+  <div style="display:flex;align-items:flex-start;gap:28px;"><div style="flex:1;min-width:0;"><div style="text-align:center;font-size:24px;margin-bottom:14px;color:#facc15;font-weight:700;">構成</div><div id="exportMain" style="display:flex;gap:16px;justify-content:center;"></div><div id="exportSub" style="display:flex;gap:16px;justify-content:center;margin-top:14px;"></div></div><div style="width:170px;flex-shrink:0;"><div style="text-align:center;font-size:24px;margin-bottom:14px;color:#facc15;font-weight:700;">BAN</div><div id="exportBan" style="display:grid;grid-template-columns:repeat(2,76px);gap:10px;justify-content:center;"></div></div></div>
 </div>
-
-<div class="modal-backdrop" id="exportPreviewModal">
-  <div class="modal export-preview-modal">
-    <h2>画像出力プレビュー</h2>
-    <div class="export-preview-wrap">
-      <img id="exportPreviewImage" alt="export preview">
-    </div>
-    <div class="modal-actions">
-      <button class="cancel-btn" onclick="closeExportPreview()">閉じる</button>
-      <button class="save-btn" onclick="downloadExportPreview()">DL</button>
-    </div>
-  </div>
-</div>
-
+<div class="modal-backdrop" id="exportPreviewModal"><div class="modal export-preview-modal"><h2>画像出力プレビュー</h2><div class="export-preview-wrap"><img id="exportPreviewImage" alt="export preview"></div><div class="modal-actions"><button class="cancel-btn" onclick="closeExportPreview()">閉じる</button><button class="save-btn" onclick="downloadExportPreview()">DL</button></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore-compat.js"></script>
-<script src="db.js?v=58"></script>
-<script src="firebase.js?v=58"></script>
-<script src="team-common.js?v=58"></script>
+<script src="db.js?v=57"></script>
+<script src="firebase.js?v=57"></script>
+<script src="team-common.js?v=57"></script>
 </body>
 </html>
