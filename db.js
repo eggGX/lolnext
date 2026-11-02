@@ -3,6 +3,10 @@ const DB_VERSION = 1;
 const CHAMPION_STORE = "champions";
 const TEAM_STORE = "teams";
 
+const CHAMPION_NAME_MIGRATIONS = new Map([
+  ["ジンスク", "ジンクス"]
+]);
+
 function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -79,16 +83,42 @@ async function deleteFromStore(storeName, id) {
   });
 }
 
+function normalizeChampion(champion) {
+  if (!champion) return champion;
+  const migratedName = CHAMPION_NAME_MIGRATIONS.get(champion.name);
+  return migratedName ? { ...champion, name: migratedName } : champion;
+}
+
+async function migrateChampionData(champions) {
+  const migrated = champions
+    .map(normalizeChampion)
+    .filter((champion, index) => champion !== champions[index]);
+
+  if (migrated.length > 0) {
+    await saveManyToStore(CHAMPION_STORE, migrated);
+  }
+
+  return champions.map(normalizeChampion);
+}
+
 async function saveChampionData(champion) {
-  return saveToStore(CHAMPION_STORE, champion);
+  return saveToStore(CHAMPION_STORE, normalizeChampion(champion));
 }
 
 async function getChampionList() {
-  return getAllFromStore(CHAMPION_STORE);
+  const champions = await getAllFromStore(CHAMPION_STORE);
+  return migrateChampionData(champions);
 }
 
 async function getChampionById(id) {
-  return getById(CHAMPION_STORE, id);
+  const champion = await getById(CHAMPION_STORE, id);
+  if (!champion) return null;
+
+  const normalized = normalizeChampion(champion);
+  if (normalized !== champion) {
+    await saveToStore(CHAMPION_STORE, normalized);
+  }
+  return normalized;
 }
 
 async function deleteChampionData(id) {
@@ -111,7 +141,6 @@ async function deleteTeamData(id) {
   return deleteFromStore(TEAM_STORE, id);
 }
 
-
 async function saveManyToStore(storeName, items) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -129,7 +158,8 @@ async function saveManyToStore(storeName, items) {
 }
 
 async function saveManyChampions(items) {
-  return saveManyToStore(CHAMPION_STORE, items);
+  const normalizedItems = items.map(normalizeChampion);
+  return saveManyToStore(CHAMPION_STORE, normalizedItems);
 }
 
 async function saveManyTeams(items) {
