@@ -1,0 +1,101 @@
+* { box-sizing: border-box; }
+body {
+  background: #0f172a;
+  color: #e5e7eb;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.nav a, .nav-btn {
+  background: #1e293b;
+  color: #e5e7eb;
+  text-decoration: none;
+  padding: 10px 14px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.nav a:hover, .nav-btn:hover { background: #334155; }
+h1 { margin: 0; }
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.team-card {
+  background: #1e293b;
+  padding: 15px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+}
+.lanes {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+.lane {
+  text-align: center;
+  min-width: 70px;
+}
+.lane img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+button {
+  margin-right: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+}
+.edit { background: #d4af37; }
+.share { background: #8b5cf6; color: white; }
+.export { background: #3b82f6; color: white; }
+.delete { background: #ef4444; color: white; }
+.empty {
+  color: #94a3b8;
+  padding: 20px 0;
+}
+
+@media (max-width: 900px) {
+  body { padding: 14px; }
+  .header { align-items: flex-start; }
+  .nav {
+    width: 100%;
+    gap: 8px;
+  }
+  .nav a, .nav-btn {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .team-card { padding: 12px; }
+  .lanes { gap: 8px; }
+  .lane { min-width: 56px; }
+  .lane img {
+    width: 52px;
+    height: 52px;
+  }
+  button {
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+}
