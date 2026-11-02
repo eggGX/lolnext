@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像トリミングツール</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin-bottom: 20px;
+      color: #ccc;
+    }
+
+    .canvas-wrap {
+      display: inline-block;
+      border: 2px solid #444;
+      background: #222;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    canvas {
+      display: block;
+      background: #000;
+    }
+
+    .controls {
+      margin-top: 20px;
+    }
+
+    .row {
+      margin: 6px 0;
+    }
+
+    button {
+      min-width: 60px;
+      padding: 10px 14px;
+      margin: 4px;
+      border: none;
+      border-radius: 8px;
+      background: #2c2c2c;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #3a3a3a;
+    }
+
+    .download-btn {
+      margin-top: 18px;
+      background: #1f6feb;
+    }
+
+    .download-btn:hover {
+      background: #2b7fff;
+    }
+
+    .info {
+      margin-top: 12px;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>画像トリミングツール</h1>
+  <p>画像を Ctrl+V で貼り付けてください</p>
+
+  <div class="canvas-wrap">
+    <canvas id="canvas" width="352" height="397"></canvas>
+  </div>
+
+  <div class="controls">
+    <div class="row">
+      <button type="button" id="upBtn">↑</button>
+    </div>
+    <div class="row">
+      <button type="button" id="leftBtn">←</button>
+      <button type="button" id="rightBtn">→</button>
+    </div>
+    <div class="row">
+      <button type="button" id="downBtn">↓</button>
+    </div>
+    <div class="row">
+      <button type="button" class="download-btn" id="downloadBtn">ダウンロード</button>
+    </div>
+  </div>
+
+  <div class="info">
+    出力サイズ: 352 × 397
+  </div>
+
+  <script>
+    const TARGET_WIDTH = 352;
+    const TARGET_HEIGHT = 397;
+    const MOVE_STEP = 10;
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const upBtn = document.getElementById("upBtn");
+    const downBtn = document.getElementById("downBtn");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let currentImage = null;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    window.addEventListener("paste", function (e) {
+      const items = e.clipboardData?.items;
+      if (!items) {
+        return;
+      }
+
+      for (const item of items) {
+        if (item.type && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (!file) {
+            continue;
+          }
+
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const img = new Image();
+            img.onload = function () {
+              currentImage = img;
+              offsetX = 0;
+              offsetY = 0;
+              drawImage();
+            };
+            img.src = event.target.result;
+          };
+          reader.readAsDataURL(file);
+          break;
+        }
+      }
+    });
+
+    function drawImage() {
+      ctx.clearRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+      if (!currentImage) {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+        ctx.fillStyle = "#888";
+        ctx.font = "16px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("ここに画像が表示されます", TARGET_WIDTH / 2, TARGET_HEIGHT / 2);
+        return;
+      }
+
+      const baseX = (currentImage.width - TARGET_WIDTH) / 2;
+      const baseY = (currentImage.height - TARGET_HEIGHT) / 2;
+
+      let sx = baseX + offsetX;
+      let sy = baseY + offsetY;
+
+      if (currentImage.width <= TARGET_WIDTH) {
+        sx = 0;
+      } else {
+        sx = Math.max(0, Math.min(sx, currentImage.width - TARGET_WIDTH));
+      }
+
+      if (currentImage.height <= TARGET_HEIGHT) {
+        sy = 0;
+      } else {
+        sy = Math.max(0, Math.min(sy, currentImage.height - TARGET_HEIGHT));
+      }
+
+      const sw = Math.min(TARGET_WIDTH, currentImage.width);
+      const sh = Math.min(TARGET_HEIGHT, currentImage.height);
+
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+      ctx.drawImage(
+        currentImage,
+        sx, sy,
+        sw, sh,
+        0, 0,
+        sw, sh
+      );
+    }
+
+    function moveCrop(dx, dy) {
+      if (!currentImage) {
+        return;
+      }
+
+      offsetX += dx;
+      offsetY += dy;
+      drawImage();
+    }
+
+    function downloadImage() {
+      if (!currentImage) {
+        alert("先に画像を貼り付けてください。");
+        return;
+      }
+
+      const link = document.createElement("a");
+      link.download = "cropped.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    upBtn.addEventListener("click", function () {
+      moveCrop(0, -MOVE_STEP);
+    });
+
+    downBtn.addEventListener("click", function () {
+      moveCrop(0, MOVE_STEP);
+    });
+
+    leftBtn.addEventListener("click", function () {
+      moveCrop(-MOVE_STEP, 0);
+    });
+
+    rightBtn.addEventListener("click", function () {
+      moveCrop(MOVE_STEP, 0);
+    });
+
+    downloadBtn.addEventListener("click", downloadImage);
+
+    document.addEventListener("keydown", function (e) {
+      if (!currentImage) {
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveCrop(0, -MOVE_STEP);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveCrop(0, MOVE_STEP);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        moveCrop(-MOVE_STEP, 0);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        moveCrop(MOVE_STEP, 0);
+      }
+    });
+
+    drawImage();
+  </script>
+</body>
+</html>
