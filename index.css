@@ -18,6 +18,7 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 .nav a, .nav-btn {
   background: #1e293b;
@@ -73,6 +74,89 @@ button {
   color: #94a3b8;
   padding: 20px 0;
 }
+.account-chip {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: #111827;
+  border: 1px solid #334155;
+  color: #d4af37;
+  font-weight: 700;
+}
+.logout-btn {
+  border-color: #7f1d1d;
+}
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.92);
+  backdrop-filter: blur(4px);
+}
+.auth-gate.hidden { display: none; }
+.auth-card {
+  width: min(440px, 100%);
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+}
+.auth-card h2 {
+  margin: 0 0 8px;
+  color: #d4af37;
+}
+.auth-card p {
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin: 0 0 20px;
+}
+.auth-card label {
+  display: block;
+  margin-bottom: 6px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.auth-card input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #fff;
+  font: inherit;
+}
+.auth-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.auth-actions button {
+  flex: 1;
+  margin: 0;
+  padding: 11px 14px;
+  font-weight: 700;
+}
+.auth-primary {
+  background: #d4af37;
+  color: #111827;
+}
+.auth-secondary {
+  background: #1e293b;
+  color: #e5e7eb;
+  border: 1px solid #475569;
+}
+.auth-message {
+  min-height: 22px;
+  margin-top: 14px;
+  color: #cbd5e1;
+  font-size: 14px;
+}
+.auth-message.error { color: #fca5a5; }
 
 @media (max-width: 900px) {
   body { padding: 14px; }
@@ -87,6 +171,10 @@ button {
     padding: 10px 12px;
     font-size: 14px;
   }
+  .account-chip {
+    flex: 1 1 100%;
+    text-align: center;
+  }
   .team-card { padding: 12px; }
   .lanes { gap: 8px; }
   .lane { min-width: 56px; }
@@ -98,4 +186,5 @@ button {
     margin-right: 6px;
     margin-bottom: 6px;
   }
+  .auth-actions { flex-direction: column; }
 }
