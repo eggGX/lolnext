@@ -1,0 +1,271 @@
+function makeId() {
+  return crypto && crypto.randomUUID
+    ? crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2);
+}
+
+function downloadJson(fileName, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.download = fileName;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function getSafeFileName(name, fallback) {
+  const base = (name || fallback || "export").trim();
+  return base.replace(/[\\/:*?"<>|]/g, "_");
+}
+
+async function buildExportPayload(teamIds) {
+  const allTeams = await getTeamList();
+  const allChampions = await getChampionList();
+  const teams = allTeams.filter(team => teamIds.includes(team.id));
+
+  const championIdSet = new Set();
+  teams.forEach(team => {
+    Object.values(team.lanes || {}).forEach(id => id && championIdSet.add(id));
+    (team.bans || []).forEach(id => id && championIdSet.add(id));
+    Object.values(team.altPicks || {}).forEach(list => {
+      (list || []).forEach(id => id && championIdSet.add(id));
+    });
+  });
+
+  const champions = allChampions.filter(champ => championIdSet.has(champ.id));
+
+  return {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    teams,
+    champions
+  };
+}
+
+function triggerImport() {
+  const input = document.getElementById("importInput");
+  input.value = "";
+  input.click();
+}
+
+async function exportSingleTeam(teamId) {
+  const teams = await getTeamList();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) {
+    alert("構成が見つかりませんでした");
+    return;
+  }
+
+  const payload = await buildExportPayload([teamId]);
+  downloadJson(getSafeFileName(team.name, "チーム構成") + ".json", payload);
+}
+
+async function exportAllTeams() {
+  const teams = await getTeamList();
+  if (teams.length === 0) {
+    alert("エクスポートできる構成がありません");
+    return;
+  }
+
+  const payload = await buildExportPayload(teams.map(t => t.id));
+  downloadJson("全構成エクスポート.json", payload);
+}
+
+async function handleImport(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  try {
+    const text = await file.text();
+    const payload = JSON.parse(text);
+
+    if (!payload || !Array.isArray(payload.teams)) {
+      alert("対応していないファイルです");
+      return;
+    }
+
+    const importedChampionSource = Array.isArray(payload.champions) ? payload.champions : [];
+    const championSourceMap = new Map(importedChampionSource.map(ch => [ch.id, ch]));
+    const existingChampions = await getChampionList();
+
+    function resolveChampionId(originalId) {
+      if (!originalId) return "";
+      const imported = championSourceMap.get(originalId);
+      if (!imported) return "";
+
+      const same = existingChampions.find(c =>
+        c.name === imported.name && c.image === imported.image
+      );
+      return same ? same.id : "";
+    }
+
+    const importedTeams = payload.teams.map(team => {
+      const remappedLanes = {};
+      Object.entries(team.lanes || {}).forEach(([lane, id]) => {
+        remappedLanes[lane] = resolveChampionId(id);
+      });
+
+      const remappedBans = (team.bans || [])
+        .map(id => resolveChampionId(id))
+        .filter(Boolean);
+
+      const remappedAltPicks = {};
+      Object.entries(team.altPicks || {}).forEach(([lane, list]) => {
+        remappedAltPicks[lane] = (list || [])
+          .map(id => resolveChampionId(id))
+          .filter(Boolean);
+      });
+
+      return {
+        ...team,
+        id: makeId(),
+        lanes: remappedLanes,
+        bans: remappedBans,
+        altPicks: remappedAltPicks
+      };
+    });
+
+    await saveManyTeams(importedTeams);
+    alert(`${importedTeams.length}件の構成をインポートしました`);
+    await refreshTeams();
+  } catch (error) {
+    console.error(error);
+    alert("インポートに失敗しました");
+  }
+}
+
+async function ensureInitialChampionSeed() {
+  try {
+    const existing = await getChampionList();
+    if (existing.length > 0) return;
+
+    const response = await fetch("champions.json", { cache: "no-store" });
+    if (!response.ok) return;
+
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.champions)) return;
+
+    const champions = payload.champions.map(ch => ({
+      ...ch,
+      tags: Array.isArray(ch.tags) ? ch.tags : []
+    }));
+
+    if (champions.length > 0) {
+      await saveManyChampions(champions);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function loadTeams() {
+  const teams = await getTeamList();
+  const champions = await getChampionList();
+  const list = document.getElementById("teamList");
+  list.innerHTML = "";
+
+  if (teams.length === 0) {
+    list.innerHTML = '<div class="empty">まだ構成が登録されていません。</div>';
+    return;
+  }
+
+  teams.forEach(team => {
+    const div = document.createElement("div");
+    div.className = "team-card";
+
+    let lanesHTML = '<div class="lanes">';
+    ["top", "jg", "mid", "adc", "sup"].forEach(lane => {
+      const champ = champions.find(c => c.id === (team.lanes?.[lane] || ""));
+      lanesHTML += `
+        <div class="lane">
+          <div>${lane.toUpperCase()}</div>
+          ${champ ? `<img src="${champ.image}" alt="">` : "-"}
+        </div>
+      `;
+    });
+    lanesHTML += "</div>";
+
+    div.innerHTML = `
+      <h3>${team.name || "(名前なし)"}</h3>
+      <div>${team.memo || ""}</div>
+      ${lanesHTML}
+      <button class="edit" onclick="editTeam('${team.id}')">編集</button>
+      <button class="share" onclick="copyShareUrl('${team.id}')">共有URL</button>
+      <button class="export" onclick="exportSingleTeam('${team.id}')">エクスポート</button>
+      <button class="delete" onclick="deleteTeam('${team.id}')">削除</button>
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+function editTeam(id) {
+  sessionStorage.setItem("editingTeamId", id);
+  location.href = "team-edit.html?v=54";
+}
+
+async function deleteTeam(id) {
+  if (!confirm("削除しますか？")) return;
+  await deleteTeamData(id);
+  await refreshTeams();
+}
+
+function buildSharePayload(team, champions) {
+  const championById = new Map(champions.map(c => [c.id, c]));
+  const lanes = {};
+  Object.entries(team.lanes || {}).forEach(([lane, id]) => {
+    lanes[lane] = championById.get(id)?.name || "";
+  });
+
+  const bans = (team.bans || [])
+    .map(id => championById.get(id)?.name || "")
+    .filter(Boolean);
+
+  const altPicks = {};
+  Object.entries(team.altPicks || {}).forEach(([lane, list]) => {
+    altPicks[lane] = (list || [])
+      .map(id => championById.get(id)?.name || "")
+      .filter(Boolean);
+  });
+
+  return {
+    team: {
+      name: team.name || "",
+      memo: team.memo || "",
+      lanes,
+      bans,
+      altPicks
+    }
+  };
+}
+
+async function copyShareUrl(teamId) {
+  const teams = await getTeamList();
+  const champions = await getChampionList();
+  const team = teams.find(t => t.id === teamId);
+  if (!team) {
+    alert("構成が見つかりません");
+    return;
+  }
+
+  const payload = buildSharePayload(team, champions);
+  const encoded = encodeURIComponent(
+    btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+  );
+  const url = new URL("team-builder.html?v=54", window.location.href);
+  url.searchParams.set("share", encoded);
+
+  try {
+    await navigator.clipboard.writeText(url.toString());
+    alert("共有URLコピーしました");
+  } catch {
+    prompt("コピーしてください", url.toString());
+  }
+}
+
+async function refreshTeams() {
+  await ensureInitialChampionSeed();
+  await loadTeams();
+}
+
+refreshTeams();
