@@ -85,12 +85,8 @@ button {
 }
 
 @media (max-width: 900px) {
-  body {
-    padding: 14px;
-  }
-  .header {
-    align-items: flex-start;
-  }
+  body { padding: 14px; }
+  .header { align-items: flex-start; }
   .nav {
     width: 100%;
     gap: 8px;
@@ -101,15 +97,9 @@ button {
     padding: 10px 12px;
     font-size: 14px;
   }
-  .team-card {
-    padding: 12px;
-  }
-  .lanes {
-    gap: 8px;
-  }
-  .lane {
-    min-width: 56px;
-  }
+  .team-card { padding: 12px; }
+  .lanes { gap: 8px; }
+  .lane { min-width: 56px; }
   .lane img {
     width: 52px;
     height: 52px;
@@ -119,7 +109,6 @@ button {
     margin-bottom: 6px;
   }
 }
-
 </style>
 </head>
 <body>
@@ -137,45 +126,12 @@ button {
 <input id="importInput" type="file" accept=".json,application/json" style="display:none" onchange="handleImport(event)">
 <div id="teamList" class="team-list"></div>
 
-
-<script src="db.js">
-function buildSharePayload(team, champions) {
-  const championById = new Map(champions.map(c => [c.id, c]));
-  const lanes = {};
-  Object.entries(team.lanes || {}).forEach(([lane, id]) => {
-    lanes[lane] = championById.get(id)?.name || "";
-  });
-  const bans = (team.bans || []).map(id => championById.get(id)?.name || "").filter(Boolean);
-  const altPicks = {};
-  Object.entries(team.altPicks || {}).forEach(([lane, list]) => {
-    altPicks[lane] = (list || []).map(id => championById.get(id)?.name || "").filter(Boolean);
-  });
-  return { team: { name: team.name||"", memo: team.memo||"", lanes, bans, altPicks }};
-}
-
-async function copyShareUrl(teamId) {
-  const teams = await getTeamList();
-  const champions = await getChampionList();
-  const team = teams.find(t => t.id === teamId);
-  if (!team) return alert("構成が見つかりません");
-
-  const payload = buildSharePayload(team, champions);
-  const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-  const url = new URL("team-builder.html?v=53", window.location.href);
-  url.searchParams.set("share", encoded);
-
-  try {
-    await navigator.clipboard.writeText(url.toString());
-    alert("共有URLコピーしました");
-  } catch {
-    prompt("コピーしてください", url.toString());
-  }
-}
-
-</script>
+<script src="db.js"></script>
 <script>
 function makeId() {
-  return (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+  return crypto && crypto.randomUUID
+    ? crypto.randomUUID()
+    : String(Date.now()) + Math.random().toString(16).slice(2);
 }
 
 function downloadJson(fileName, data) {
@@ -189,7 +145,7 @@ function downloadJson(fileName, data) {
 
 function getSafeFileName(name, fallback) {
   const base = (name || fallback || "export").trim();
-  return base.replace(/[\/:*?"<>|]/g, "_");
+  return base.replace(/[\\/:*?"<>|]/g, "_");
 }
 
 async function buildExportPayload(teamIds) {
@@ -217,8 +173,9 @@ async function buildExportPayload(teamIds) {
 }
 
 function triggerImport() {
-  document.getElementById("importInput").value = "";
-  document.getElementById("importInput").click();
+  const input = document.getElementById("importInput");
+  input.value = "";
+  input.click();
 }
 
 async function exportSingleTeam(teamId) {
@@ -299,15 +256,13 @@ async function handleImport(event) {
     });
 
     await saveManyTeams(importedTeams);
-
     alert(`${importedTeams.length}件の構成をインポートしました`);
-    await (async function(){ await ensureInitialChampionSeed(); await loadTeams(); })();
+    await refreshTeams();
   } catch (error) {
     console.error(error);
     alert("インポートに失敗しました");
   }
 }
-
 
 async function ensureInitialChampionSeed() {
   try {
@@ -349,16 +304,16 @@ async function loadTeams() {
     div.className = "team-card";
 
     let lanesHTML = '<div class="lanes">';
-    ["top", "jg", "mid", "adc", "sup"].forEach(l => {
-      const champ = champions.find(c => c.id === (team.lanes?.[l] || ""));
+    ["top", "jg", "mid", "adc", "sup"].forEach(lane => {
+      const champ = champions.find(c => c.id === (team.lanes?.[lane] || ""));
       lanesHTML += `
         <div class="lane">
-          <div>${l.toUpperCase()}</div>
+          <div>${lane.toUpperCase()}</div>
           ${champ ? `<img src="${champ.image}" alt="">` : "-"}
         </div>
       `;
     });
-    lanesHTML += '</div>';
+    lanesHTML += "</div>";
 
     div.innerHTML = `
       <h3>${team.name || "(名前なし)"}</h3>
@@ -382,10 +337,8 @@ function editTeam(id) {
 async function deleteTeam(id) {
   if (!confirm("削除しますか？")) return;
   await deleteTeamData(id);
-  await (async function(){ await ensureInitialChampionSeed(); await loadTeams(); })();
+  await refreshTeams();
 }
-
-(async function(){ await ensureInitialChampionSeed(); await loadTeams(); })();
 
 function buildSharePayload(team, champions) {
   const championById = new Map(champions.map(c => [c.id, c]));
@@ -393,22 +346,42 @@ function buildSharePayload(team, champions) {
   Object.entries(team.lanes || {}).forEach(([lane, id]) => {
     lanes[lane] = championById.get(id)?.name || "";
   });
-  const bans = (team.bans || []).map(id => championById.get(id)?.name || "").filter(Boolean);
+
+  const bans = (team.bans || [])
+    .map(id => championById.get(id)?.name || "")
+    .filter(Boolean);
+
   const altPicks = {};
   Object.entries(team.altPicks || {}).forEach(([lane, list]) => {
-    altPicks[lane] = (list || []).map(id => championById.get(id)?.name || "").filter(Boolean);
+    altPicks[lane] = (list || [])
+      .map(id => championById.get(id)?.name || "")
+      .filter(Boolean);
   });
-  return { team: { name: team.name||"", memo: team.memo||"", lanes, bans, altPicks }};
+
+  return {
+    team: {
+      name: team.name || "",
+      memo: team.memo || "",
+      lanes,
+      bans,
+      altPicks
+    }
+  };
 }
 
 async function copyShareUrl(teamId) {
   const teams = await getTeamList();
   const champions = await getChampionList();
   const team = teams.find(t => t.id === teamId);
-  if (!team) return alert("構成が見つかりません");
+  if (!team) {
+    alert("構成が見つかりません");
+    return;
+  }
 
   const payload = buildSharePayload(team, champions);
-  const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
+  const encoded = encodeURIComponent(
+    btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+  );
   const url = new URL("team-builder.html?v=53", window.location.href);
   url.searchParams.set("share", encoded);
 
@@ -420,8 +393,12 @@ async function copyShareUrl(teamId) {
   }
 }
 
+async function refreshTeams() {
+  await ensureInitialChampionSeed();
+  await loadTeams();
+}
+
+refreshTeams();
 </script>
-
-
 </body>
 </html>
