@@ -16,9 +16,7 @@ const localTeamApi = {
   saveManyTeams: typeof saveManyTeams === "function" ? saveManyTeams : null
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
 const lolnextAuth = firebase.auth();
 const lolnextDb = firebase.firestore();
@@ -26,9 +24,7 @@ const lolnextDb = firebase.firestore();
 lolnextAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.error);
 
 let authReadyResolve;
-const authReadyPromise = new Promise(resolve => {
-  authReadyResolve = resolve;
-});
+const authReadyPromise = new Promise(resolve => { authReadyResolve = resolve; });
 let authReadyResolved = false;
 
 lolnextAuth.onAuthStateChanged(user => {
@@ -47,6 +43,10 @@ function waitForAuthReady() {
 
 function getCurrentUser() {
   return lolnextAuth.currentUser;
+}
+
+async function getAuthenticatedUser() {
+  return getCurrentUser() || await waitForAuthReady();
 }
 
 function normalizeAccountName(name) {
@@ -139,7 +139,6 @@ function updateAuthUI(user) {
   const gate = document.getElementById("authGate");
   const accountName = document.getElementById("currentAccountName");
   const logoutButton = document.getElementById("logoutButton");
-
   if (gate) gate.classList.toggle("hidden", Boolean(user));
   if (accountName) accountName.textContent = user?.displayName || (user ? "ログイン中" : "未ログイン");
   if (logoutButton) logoutButton.style.display = user ? "inline-block" : "none";
@@ -157,19 +156,21 @@ function guardNonIndexPage(user) {
 }
 
 async function requireLogin() {
-  const user = await waitForAuthReady();
+  const user = await getAuthenticatedUser();
   if (user) return user;
   guardNonIndexPage(null);
   return null;
 }
 
-function teamCollection(user = getCurrentUser()) {
+function teamCollection(user) {
   if (!user) throw new Error("ログインが必要です");
   return lolnextDb.collection("users").doc(user.uid).collection("teams");
 }
 
 async function getCloudTeamList() {
-  const snapshot = await teamCollection().get();
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error("ログインが必要です");
+  const snapshot = await teamCollection(user).get();
   return snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -177,13 +178,17 @@ async function getCloudTeamList() {
 
 async function getCloudTeamById(id) {
   if (!id) return null;
-  const doc = await teamCollection().doc(id).get();
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error("ログインが必要です");
+  const doc = await teamCollection(user).doc(id).get();
   return doc.exists ? { id: doc.id, ...doc.data() } : null;
 }
 
 async function saveCloudTeam(team) {
   if (!team?.id) throw new Error("構成IDがありません");
-  await teamCollection().doc(team.id).set({
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error("ログインが必要です");
+  await teamCollection(user).doc(team.id).set({
     name: team.name || "",
     memo: team.memo || "",
     lanes: team.lanes || {},
@@ -194,13 +199,17 @@ async function saveCloudTeam(team) {
 }
 
 async function deleteCloudTeam(id) {
-  await teamCollection().doc(id).delete();
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error("ログインが必要です");
+  await teamCollection(user).doc(id).delete();
 }
 
 async function saveManyCloudTeams(teams) {
   if (!Array.isArray(teams) || teams.length === 0) return;
+  const user = await getAuthenticatedUser();
+  if (!user) throw new Error("ログインが必要です");
   const batch = lolnextDb.batch();
-  const collection = teamCollection();
+  const collection = teamCollection(user);
   const now = Date.now();
   teams.forEach((team, index) => {
     batch.set(collection.doc(team.id), {
@@ -216,15 +225,12 @@ async function saveManyCloudTeams(teams) {
 }
 
 async function migrateLocalTeamsIfCloudEmpty() {
-  const user = getCurrentUser();
+  const user = await getAuthenticatedUser();
   if (!user || !localTeamApi.getTeamList) return 0;
-
   const cloudTeams = await getCloudTeamList();
   if (cloudTeams.length > 0) return 0;
-
   const localTeams = await localTeamApi.getTeamList();
   if (!localTeams.length) return 0;
-
   await saveManyCloudTeams(localTeams);
   return localTeams.length;
 }
