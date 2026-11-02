@@ -2,10 +2,13 @@ const DB_NAME = "lolTeamBuilderDB";
 const DB_VERSION = 1;
 const CHAMPION_STORE = "champions";
 const TEAM_STORE = "teams";
+const CHAMPION_MASTER_IDS_KEY = "lolnextChampionMasterIdsV1";
 
 const CHAMPION_NAME_MIGRATIONS = new Map([
   ["ジンスク", "ジンクス"]
 ]);
+
+let championMasterSyncPromise = null;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -101,16 +104,84 @@ async function migrateChampionData(champions) {
   return champions.map(normalizeChampion);
 }
 
+function readKnownMasterChampionIds() {
+  try {
+    const raw = localStorage.getItem(CHAMPION_MASTER_IDS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return Array.isArray(parsed) ? new Set(parsed) : null;
+  } catch (error) {
+    console.warn("チャンピオン同期情報の読み込みに失敗しました", error);
+    return null;
+  }
+}
+
+function writeKnownMasterChampionIds(ids) {
+  try {
+    localStorage.setItem(CHAMPION_MASTER_IDS_KEY, JSON.stringify(Array.from(ids)));
+  } catch (error) {
+    console.warn("チャンピオン同期情報の保存に失敗しました", error);
+  }
+}
+
+async function syncMasterChampions() {
+  if (championMasterSyncPromise) return championMasterSyncPromise;
+
+  championMasterSyncPromise = (async () => {
+    try {
+      const response = await fetch("champions.json", { cache: "no-store" });
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      if (!payload || !Array.isArray(payload.champions)) return;
+
+      const master = payload.champions
+        .filter(champion => champion && champion.id)
+        .map(champion => normalizeChampion({
+          ...champion,
+          tags: Array.isArray(champion.tags) ? champion.tags : []
+        }));
+
+      const local = await getAllFromStore(CHAMPION_STORE);
+      const localIds = new Set(local.map(champion => champion.id).filter(Boolean));
+      const knownMasterIds = readKnownMasterChampionIds();
+
+      let additions;
+      if (knownMasterIds === null) {
+        // 初回導入時は、現在ローカルに無いマスターデータだけ補完する。
+        additions = master.filter(champion => !localIds.has(champion.id));
+      } else {
+        // 2回目以降は、マスターに新しく追加されたIDだけ取り込む。
+        additions = master.filter(champion =>
+          !knownMasterIds.has(champion.id) && !localIds.has(champion.id)
+        );
+      }
+
+      if (additions.length > 0) {
+        await saveManyToStore(CHAMPION_STORE, additions);
+        console.log(`${additions.length}件の新規チャンピオンを初期データから追加しました`);
+      }
+
+      writeKnownMasterChampionIds(new Set(master.map(champion => champion.id)));
+    } catch (error) {
+      console.error("初期チャンピオンデータの同期に失敗しました", error);
+    }
+  })();
+
+  return championMasterSyncPromise;
+}
+
 async function saveChampionData(champion) {
   return saveToStore(CHAMPION_STORE, normalizeChampion(champion));
 }
 
 async function getChampionList() {
+  await syncMasterChampions();
   const champions = await getAllFromStore(CHAMPION_STORE);
   return migrateChampionData(champions);
 }
 
 async function getChampionById(id) {
+  await syncMasterChampions();
   const champion = await getById(CHAMPION_STORE, id);
   if (!champion) return null;
 
