@@ -1,6 +1,6 @@
 function makeId() {
-  return crypto && crypto.randomUUID
-    ? crypto.randomUUID()
+  return window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
     : String(Date.now()) + Math.random().toString(16).slice(2);
 }
 
@@ -19,7 +19,7 @@ function getSafeFileName(name, fallback) {
 }
 
 async function buildExportPayload(teamIds) {
-  const allTeams = await getTeamList();
+  const allTeams = await getCloudTeamList();
   const allChampions = await getChampionList();
   const teams = allTeams.filter(team => teamIds.includes(team.id));
 
@@ -43,13 +43,14 @@ async function buildExportPayload(teamIds) {
 }
 
 function triggerImport() {
+  if (!getCurrentUser()) return;
   const input = document.getElementById("importInput");
   input.value = "";
   input.click();
 }
 
 async function exportSingleTeam(teamId) {
-  const teams = await getTeamList();
+  const teams = await getCloudTeamList();
   const team = teams.find(t => t.id === teamId);
   if (!team) {
     alert("構成が見つかりませんでした");
@@ -61,7 +62,7 @@ async function exportSingleTeam(teamId) {
 }
 
 async function exportAllTeams() {
-  const teams = await getTeamList();
+  const teams = await getCloudTeamList();
   if (teams.length === 0) {
     alert("エクスポートできる構成がありません");
     return;
@@ -125,7 +126,7 @@ async function handleImport(event) {
       };
     });
 
-    await saveManyTeams(importedTeams);
+    await saveManyCloudTeams(importedTeams);
     alert(`${importedTeams.length}件の構成をインポートしました`);
     await refreshTeams();
   } catch (error) {
@@ -159,7 +160,7 @@ async function ensureInitialChampionSeed() {
 }
 
 async function loadTeams() {
-  const teams = await getTeamList();
+  const teams = await getCloudTeamList();
   const champions = await getChampionList();
   const list = document.getElementById("teamList");
   list.innerHTML = "";
@@ -173,27 +174,50 @@ async function loadTeams() {
     const div = document.createElement("div");
     div.className = "team-card";
 
-    let lanesHTML = '<div class="lanes">';
-    ["top", "jg", "mid", "adc", "sup"].forEach(lane => {
-      const champ = champions.find(c => c.id === (team.lanes?.[lane] || ""));
-      lanesHTML += `
-        <div class="lane">
-          <div>${lane.toUpperCase()}</div>
-          ${champ ? `<img src="${champ.image}" alt="">` : "-"}
-        </div>
-      `;
-    });
-    lanesHTML += "</div>";
+    const title = document.createElement("h3");
+    title.textContent = team.name || "(名前なし)";
+    div.appendChild(title);
 
-    div.innerHTML = `
-      <h3>${team.name || "(名前なし)"}</h3>
-      <div>${team.memo || ""}</div>
-      ${lanesHTML}
-      <button class="edit" onclick="editTeam('${team.id}')">編集</button>
-      <button class="share" onclick="copyShareUrl('${team.id}')">共有URL</button>
-      <button class="export" onclick="exportSingleTeam('${team.id}')">エクスポート</button>
-      <button class="delete" onclick="deleteTeam('${team.id}')">削除</button>
-    `;
+    const memo = document.createElement("div");
+    memo.textContent = team.memo || "";
+    div.appendChild(memo);
+
+    const lanesWrap = document.createElement("div");
+    lanesWrap.className = "lanes";
+    ["top", "jg", "mid", "adc", "sup"].forEach(lane => {
+      const laneWrap = document.createElement("div");
+      laneWrap.className = "lane";
+
+      const label = document.createElement("div");
+      label.textContent = lane.toUpperCase();
+      laneWrap.appendChild(label);
+
+      const champ = champions.find(c => c.id === (team.lanes?.[lane] || ""));
+      if (champ) {
+        const img = document.createElement("img");
+        img.src = champ.image;
+        img.alt = "";
+        laneWrap.appendChild(img);
+      } else {
+        laneWrap.append("-");
+      }
+      lanesWrap.appendChild(laneWrap);
+    });
+    div.appendChild(lanesWrap);
+
+    const actions = [
+      ["編集", "edit", () => editTeam(team.id)],
+      ["共有URL", "share", () => copyShareUrl(team.id)],
+      ["エクスポート", "export", () => exportSingleTeam(team.id)],
+      ["削除", "delete", () => deleteTeam(team.id)]
+    ];
+    actions.forEach(([label, className, handler]) => {
+      const button = document.createElement("button");
+      button.className = className;
+      button.textContent = label;
+      button.onclick = handler;
+      div.appendChild(button);
+    });
 
     list.appendChild(div);
   });
@@ -201,12 +225,12 @@ async function loadTeams() {
 
 function editTeam(id) {
   sessionStorage.setItem("editingTeamId", id);
-  location.href = "team-edit.html?v=54";
+  location.href = "team-edit.html?v=56";
 }
 
 async function deleteTeam(id) {
   if (!confirm("削除しますか？")) return;
-  await deleteTeamData(id);
+  await deleteCloudTeam(id);
   await refreshTeams();
 }
 
@@ -240,7 +264,7 @@ function buildSharePayload(team, champions) {
 }
 
 async function copyShareUrl(teamId) {
-  const teams = await getTeamList();
+  const teams = await getCloudTeamList();
   const champions = await getChampionList();
   const team = teams.find(t => t.id === teamId);
   if (!team) {
@@ -252,7 +276,7 @@ async function copyShareUrl(teamId) {
   const encoded = encodeURIComponent(
     btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
   );
-  const url = new URL("team-builder.html?v=54", window.location.href);
+  const url = new URL("team-builder.html?v=56", window.location.href);
   url.searchParams.set("share", encoded);
 
   try {
@@ -264,8 +288,38 @@ async function copyShareUrl(teamId) {
 }
 
 async function refreshTeams() {
+  if (!getCurrentUser()) return;
   await ensureInitialChampionSeed();
   await loadTeams();
 }
 
-refreshTeams();
+async function startIndexPage() {
+  const user = await waitForAuthReady();
+  if (!user) {
+    document.getElementById("teamList").innerHTML = '<div class="empty">ログインすると構成一覧が表示されます。</div>';
+    return;
+  }
+
+  try {
+    const migrated = await migrateLocalTeamsIfCloudEmpty();
+    if (migrated > 0) {
+      console.log(`${migrated}件のローカル構成をクラウドへ移行しました`);
+    }
+    await refreshTeams();
+  } catch (error) {
+    console.error(error);
+    document.getElementById("teamList").innerHTML = '<div class="empty">構成データの読み込みに失敗しました。Firestoreのルールを確認してください。</div>';
+  }
+}
+
+window.addEventListener("lolnext-auth-change", async event => {
+  if (!event.detail.user) return;
+  try {
+    await migrateLocalTeamsIfCloudEmpty();
+    await refreshTeams();
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+startIndexPage();
