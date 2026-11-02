@@ -3,7 +3,6 @@ const DB_VERSION = 1;
 const CHAMPION_STORE = "champions";
 const TEAM_STORE = "teams";
 const CHAMPION_MASTER_IDS_KEY = "lolnextChampionMasterIdsV1";
-const CHAMPION_MASTER_FILES = ["champions.json", "champions-extra.json"];
 
 const CHAMPION_NAME_MIGRATIONS = new Map([
   ["ジンスク", "ジンクス"]
@@ -124,35 +123,23 @@ function writeKnownMasterChampionIds(ids) {
   }
 }
 
-async function loadMasterChampions() {
-  const results = await Promise.all(CHAMPION_MASTER_FILES.map(async file => {
-    const response = await fetch(file, { cache: "no-store" });
-    if (!response.ok) return [];
-
-    const payload = await response.json();
-    if (!payload || !Array.isArray(payload.champions)) return [];
-    return payload.champions;
-  }));
-
-  const byId = new Map();
-  results.flat().forEach(champion => {
-    if (!champion || !champion.id) return;
-    byId.set(champion.id, normalizeChampion({
-      ...champion,
-      tags: Array.isArray(champion.tags) ? champion.tags : []
-    }));
-  });
-
-  return Array.from(byId.values());
-}
-
 async function syncMasterChampions() {
   if (championMasterSyncPromise) return championMasterSyncPromise;
 
   championMasterSyncPromise = (async () => {
     try {
-      const master = await loadMasterChampions();
-      if (master.length === 0) return;
+      const response = await fetch("champions.json", { cache: "no-store" });
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      if (!payload || !Array.isArray(payload.champions)) return;
+
+      const master = payload.champions
+        .filter(champion => champion && champion.id)
+        .map(champion => normalizeChampion({
+          ...champion,
+          tags: Array.isArray(champion.tags) ? champion.tags : []
+        }));
 
       const local = await getAllFromStore(CHAMPION_STORE);
       const localIds = new Set(local.map(champion => champion.id).filter(Boolean));
